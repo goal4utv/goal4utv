@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { fetchMatchDetails } from '../services/matchService';
 import { fetchAllStreams, findStreamsForMatch } from '../services/streamService';
 import { formatTime } from '../utils/date';
@@ -98,8 +99,48 @@ const Match = () => {
   // 3. Stream List Logic
   const displayList = showAllStreams ? streams : matchedStreams;
 
+  // 4. SEO Constants
+  const siteUrl = "https://goal4utv.netlify.app";
+  const currentUrl = `${siteUrl}/match/${id}`;
+  const matchTitle = `${match.homeTeam} vs ${match.awayTeam} Live Stream | Goal4uTv`;
+  const matchDesc = `Watch ${match.homeTeam} vs ${match.awayTeam} live. ${match.competitionName} match score, stats, and free stream.`;
+  const ogImage = match.homeLogo || `${siteUrl}/logo.png`;
+
+  // Schema.org Data
+  const matchSchema = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "SportsEvent",
+    "name": `${match.homeTeam} vs ${match.awayTeam}`,
+    "startDate": match.dateTime,
+    "description": matchDesc,
+    "sport": "Soccer",
+    "competitor": [
+      { "@type": "SportsTeam", "name": match.homeTeam, "image": match.homeLogo },
+      { "@type": "SportsTeam", "name": match.awayTeam, "image": match.awayLogo }
+    ],
+    "location": { "@type": "VirtualLocation", "url": currentUrl }
+  });
+
   return (
     <div className="page-container">
+      
+      {/* --- DYNAMIC SEO --- */}
+      <Helmet>
+        <title>{matchTitle}</title>
+        <meta name="description" content={matchDesc} />
+        <link rel="canonical" href={currentUrl} />
+
+        {/* Open Graph */}
+        <meta property="og:title" content={matchTitle} />
+        <meta property="og:description" content={matchDesc} />
+        <meta property="og:type" content="video.other" />
+        <meta property="og:url" content={currentUrl} />
+        <meta property="og:image" content={ogImage} />
+        
+        {/* Schema.org */}
+        <script type="application/ld+json">{matchSchema}</script>
+      </Helmet>
+
       <Link to="/" className="back-link">← Back</Link>
 
       <div className="match-detail-container">

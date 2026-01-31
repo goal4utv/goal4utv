@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { fetchMatchesByDate } from '../services/matchService';
 import { getRelativeDate, getReadableDate } from '../utils/date';
 import MatchCard from '../components/MatchCard';
@@ -32,12 +33,12 @@ const Home = () => {
 
         let newStatus = match.status;
 
-        // If match started more than 2 hours ago, force "Final"
+        // If match started more than 2 hours ago, force "FT"
         if (diffHours >= 2) {
              newStatus = 'FT'; 
         } 
         // If match started but is less than 2 hours in, force "Live"
-        // (Unless the API specifically says it's already Final/HT, but forcing Live is safer for "started" matches)
+        // (Unless it's explicitly marked Final/HT/FT)
         else if (diffHours > 0 && diffHours < 2) {
              if (match.status !== 'Final' && match.status !== 'FT' && match.status !== 'HT') {
                  newStatus = 'Live';
@@ -69,9 +70,7 @@ const Home = () => {
 
         // Priority 2: Sort Inside Groups
         if (scoreA === 1) { 
-           // Live Group: "Priority to most time completed"
-           // Matches that started earlier have more time completed.
-           // Sort Ascending (Older time -> Top)
+           // Live Group: Earliest start time first (matches playing longest)
            return timeA - timeB; 
         }
         
@@ -82,7 +81,6 @@ const Home = () => {
 
         if (scoreA === 3) {
            // Finished Group: Most recently finished at the top of the bottom section
-           // Sort Descending (Newer time -> Top)
            return timeB - timeA; 
         }
         
@@ -97,9 +95,25 @@ const Home = () => {
     }
   };
 
+  const siteUrl = "https://goal4utv.netlify.app";
+
   return (
     <div className="page-container">
-      
+      {/* --- SEO --- */}
+      <Helmet>
+        <title>Goal4uTv | Watch Live Football Streams & Scores</title>
+        <meta name="description" content="Watch live football matches, check real-time scores, and view league standings for EPL, La Liga, UCL, and more." />
+        <meta name="keywords" content="live football, sports stream, soccer scores, EPL live, la liga stream" />
+        <link rel="canonical" href={siteUrl} />
+        
+        {/* Open Graph */}
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={siteUrl} />
+        <meta property="og:title" content="Goal4uTv | Live Football Streams" />
+        <meta property="og:description" content="Free live football streaming and match stats for all major leagues." />
+        <meta property="og:image" content={`${siteUrl}/logo.png`} />
+      </Helmet>
+
       <DateFilter selectedDate={selectedDate} onSelectDate={setSelectedDate} />
 
       <div className="matches-container">
