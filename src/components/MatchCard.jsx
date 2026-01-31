@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { formatTime } from '../utils/date';
+import { formatTime, getReadableDate } from '../utils/date';
 
 const MatchCard = ({ match }) => {
   const isLive = match.status === 'Live';
@@ -24,13 +24,13 @@ const MatchCard = ({ match }) => {
         {/* Main Row: Home - Status - Away */}
         <div className="card-main">
           
-          {/* Home Team (Right aligned in Koora usually, but let's stick to Left for English) */}
+          {/* Home Team */}
           <div className="team home">
             <span className="team-name">{match.homeTeam}</span>
             {match.homeLogo ? (
                <img src={match.homeLogo} alt="" className="team-logo" />
             ) : (
-               <div className="team-logo-placeholder"></div>
+               <div className="team-logo" style={{background: '#eee', borderRadius: '50%'}}></div>
             )}
           </div>
 
@@ -53,19 +53,20 @@ const MatchCard = ({ match }) => {
              {match.awayLogo ? (
                <img src={match.awayLogo} alt="" className="team-logo" />
             ) : (
-               <div className="team-logo-placeholder"></div>
+               <div className="team-logo" style={{background: '#eee', borderRadius: '50%'}}></div>
             )}
             <span className="team-name">{match.awayTeam}</span>
           </div>
         </div>
 
-        {/* Footer Strip: League Name & TV (Koora Style) */}
+        {/* Footer Strip: League Name & Date/Time */}
         <div className="card-footer">
           <div className="league-info">
             <span>🏆 {match.competitionName}</span>
           </div>
-          <div className="tv-info">
-             📺 beIN Sports {/* Static for now, can be dynamic later */}
+          {/* UPDATED: Shows Date & Time instead of Channel */}
+          <div className="tv-info" style={{fontWeight: '500', color: '#64748b'}}>
+             📅 {getReadableDate(match.dateTime)} • ⏰ {formatTime(match.dateTime)}
           </div>
         </div>
       </div>

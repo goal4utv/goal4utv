@@ -1,19 +1,45 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { fetchMatchDetails } from '../services/matchService';
+import { fetchAllStreams, findStreamsForMatch } from '../services/streamService';
 import { formatTime } from '../utils/date';
 import Spinner from '../components/Spinner';
 
 const Match = () => {
   const { id } = useParams();
-  const [data, setData] = useState(null);
+  
+  // --- STATE ---
+  const [data, setData] = useState(null); // Match Info + Stats + Form
   const [loading, setLoading] = useState(true);
+  
+  // Stream States
+  const [streams, setStreams] = useState([]); // All fetched streams from all providers
+  const [matchedStreams, setMatchedStreams] = useState([]); // Streams matching English team names
+  const [activeStream, setActiveStream] = useState(null); // The currently playing stream URL
+  const [showAllStreams, setShowAllStreams] = useState(false); // Toggle between "Recommended" and "All"
 
+  // --- INIT DATA ---
   useEffect(() => {
     const loadData = async () => {
       try {
+        setLoading(true);
+
+        // 1. Fetch Match Details (Info, Standings, Form)
         const details = await fetchMatchDetails(id);
         setData(details);
+
+        // 2. Fetch Live Streams
+        const allStreams = await fetchAllStreams();
+        setStreams(allStreams);
+
+        // 3. Auto-Match Streams to Team Names
+        const found = findStreamsForMatch(allStreams, details.match.homeTeam, details.match.awayTeam);
+        setMatchedStreams(found);
+
+        // 4. Auto-Play if a match is found
+        if (found.length > 0) {
+          setActiveStream(found[0]);
+        }
       } catch (err) {
         console.error(err);
       } finally {
@@ -23,33 +49,33 @@ const Match = () => {
     loadData();
   }, [id]);
 
+  // --- HANDLERS ---
+  const handleStreamSelect = (stream) => {
+    setActiveStream(stream);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // --- RENDER HELPERS ---
   if (loading) return <div className="page-container"><Spinner /></div>;
   if (!data) return <div className="page-container">Match not found. <Link to="/">Go Back</Link></div>;
 
   const { match, standings, homeForm, awayForm } = data;
 
-  // --- SAFEGUARD LOGIC ---
-  // Ensure standings is an array. If the service returned null/undefined, default to empty array.
+  // 1. Standings Logic (Fuzzy Search & Safeguard)
   const safeStandings = Array.isArray(standings) ? standings : [];
-
-  // Filter Standings: Match Home or Away team (Fuzzy search)
-  // This handles cases like "Man City" vs "Manchester City FC"
   const relevantStandings = safeStandings.filter(s => {
     if (!s.TeamName) return false;
-    
-    const tName = s.TeamName.toLowerCase();       // e.g. "arsenal fc"
-    const sName = (s.ShortName || '').toLowerCase(); // e.g. "arsenal"
-    const home = match.homeTeam.toLowerCase();    // e.g. "arsenal"
+    const tName = s.TeamName.toLowerCase();
+    const sName = (s.ShortName || '').toLowerCase();
+    const home = match.homeTeam.toLowerCase();
     const away = match.awayTeam.toLowerCase();
-
     return (
       tName.includes(home) || home.includes(tName) || sName === home ||
       tName.includes(away) || away.includes(tName) || sName === away
     );
   }).sort((a,b) => a.Position - b.Position);
 
-
-  // Helper: recent form badges (W/D/L colors)
+  // 2. Form Badge Logic
   const getFormBadge = (m, teamName) => {
     const isHome = m.homeTeam === teamName;
     const teamScore = isHome ? m.homeScore : m.awayScore;
@@ -69,13 +95,16 @@ const Match = () => {
     );
   };
 
+  // 3. Stream List Logic
+  const displayList = showAllStreams ? streams : matchedStreams;
+
   return (
     <div className="page-container">
       <Link to="/" className="back-link">← Back</Link>
 
       <div className="match-detail-container">
         
-        {/* HERO SECTION */}
+        {/* === HERO SECTION === */}
         <div className="match-hero">
           <span className="hero-league">🏆 {match.competitionName}</span>
           <div className="hero-scoreboard">
@@ -93,17 +122,65 @@ const Match = () => {
           </div>
         </div>
 
-        {/* PLAYER SECTION */}
+        {/* === VIDEO PLAYER SECTION === */}
         <div className="player-section">
           <div className="video-frame">
-             <div className="stream-overlay">
-               <div className="play-btn">▶</div>
-               <p>{match.status === 'Live' ? 'LIVE STREAM' : 'Stream starts 15 mins before kickoff'}</p>
-             </div>
+             {activeStream ? (
+               <iframe 
+                 src={activeStream.url} 
+                 title="Live Stream"
+                 className="iframe-embed"
+                 sandbox="allow-scripts allow-same-origin allow-presentation"
+                 allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+                 allowFullScreen
+                 scrolling="no"
+               />
+             ) : (
+               <div className="stream-overlay">
+                 <div className="play-btn">{matchedStreams.length > 0 ? '▶' : '📺'}</div>
+                 <p>
+                   {matchedStreams.length > 0 
+                     ? 'Select a server below to start watching' 
+                     : 'No direct English match found.'}
+                 </p>
+                 {matchedStreams.length === 0 && (
+                   <button className="manual-search-btn" onClick={() => setShowAllStreams(true)}>
+                     Browse All Live Streams
+                   </button>
+                 )}
+               </div>
+             )}
+          </div>
+
+          {/* === SERVER LIST === */}
+          <div className="server-list-container">
+            <div className="server-header">
+               <span>📺 Available Servers ({displayList.length})</span>
+               <button className="toggle-all-btn" onClick={() => setShowAllStreams(!showAllStreams)}>
+                 {showAllStreams ? "Show Recommended" : "Show All Streams"}
+               </button>
+            </div>
+
+            <div className="servers-grid">
+              {displayList.length > 0 ? displayList.map((stream, index) => (
+                <button 
+                  key={index}
+                  className={`server-btn ${activeStream === stream ? 'active' : ''}`}
+                  onClick={() => handleStreamSelect(stream)}
+                >
+                  <span className="provider-tag">{stream.source}</span>
+                  <span className="stream-label">{stream.cleanLabel}</span>
+                </button>
+              )) : (
+                <div className="no-streams">
+                  <p>No streams available currently.</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* RECENT FORM SECTION */}
+        {/* === RECENT FORM SECTION === */}
         <div className="content-section">
           <h3>Recent Matches</h3>
           <div className="form-grid">
@@ -122,7 +199,7 @@ const Match = () => {
           </div>
         </div>
 
-        {/* STANDINGS TABLE SECTION */}
+        {/* === STANDINGS TABLE SECTION === */}
         {relevantStandings.length > 0 && (
           <div className="content-section">
             <h3>Current Standings</h3>
@@ -141,7 +218,6 @@ const Match = () => {
                   <tr key={row.TeamName} className={row.TeamName === match.homeTeam || row.TeamName === match.awayTeam ? 'highlight-row' : ''}>
                     <td>{row.Position}</td>
                     <td className="table-team">
-                      {/* Using Crest if available from API */}
                       {row.Crest && <img src={row.Crest} alt="" style={{width: '20px', height: '20px'}} />}
                       <span>{row.TeamName}</span>
                     </td>

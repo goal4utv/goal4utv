@@ -379,3 +379,110 @@ button { cursor: pointer; border: none; font-family: inherit; }
   .footer-content { grid-template-columns: 1fr; text-align: center; gap: 2.5rem; }
   .main-nav { display: none; }
 }
+
+/* --- Video Player Updates --- */
+.iframe-embed {
+  width: 100%;
+  height: 100%;
+  border: none;
+  position: absolute;
+  top: 0; left: 0;
+}
+
+.manual-search-btn {
+  background: var(--accent-blue);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 20px;
+  margin-top: 15px;
+  font-weight: bold;
+}
+
+/* --- Server List UI --- */
+.server-list-container {
+  margin-top: 20px;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 20px;
+}
+
+.server-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  color: #334155;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.toggle-all-btn {
+  background: transparent;
+  color: var(--accent-blue);
+  font-size: 0.8rem;
+  text-decoration: underline;
+}
+
+.servers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+  max-height: 300px;
+  overflow-y: auto; /* Scroll if too many streams */
+  padding-right: 5px;
+}
+
+/* Scrollbar for server list */
+.servers-grid::-webkit-scrollbar { width: 5px; }
+.servers-grid::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+.server-btn {
+  background: white;
+  border: 1px solid #e2e8f0;
+  padding: 10px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.server-btn:hover {
+  border-color: var(--accent-blue);
+  transform: translateY(-1px);
+}
+
+.server-btn.active {
+  background: #eff6ff;
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 1px var(--accent-blue);
+}
+
+.provider-tag {
+  background: #0f172a;
+  color: white;
+  font-size: 0.65rem;
+  padding: 3px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.stream-label {
+  font-size: 0.8rem;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+
+.no-streams {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 20px;
+  color: #94a3b8;
+  font-style: italic;
+  font-size: 0.9rem;
+}
