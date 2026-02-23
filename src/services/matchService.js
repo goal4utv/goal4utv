@@ -26,6 +26,8 @@ const normalizeMatch = (raw, compCode, compName) => {
     competitionName: compName,
     homeTeam: raw.HomeTeamName || raw.HomeTeam,
     awayTeam: raw.AwayTeamName || raw.AwayTeam,
+    homeTeamKey: raw.HomeTeamKey || raw.HomeTeam,
+    awayTeamKey: raw.AwayTeamKey || raw.AwayTeam,
     homeScore: raw.HomeTeamScore ?? null,
     awayScore: raw.AwayTeamScore ?? null,
     dateTime: rawDate,
@@ -129,14 +131,28 @@ export const fetchMatchDetails = async (matchId) => {
     console.warn('No standings found for', competitionCode); 
   }
 
-  // 3. Calculate Form
+ // 3. Calculate Form & Next Matches
+  const matchDate = new Date(match.dateTime);
+
+  // Filter matches that happened BEFORE the current match
   const finishedMatches = fullLeagueMatches.filter(m => 
     (m.status === 'Final' || m.status === 'FT') && 
-    new Date(m.dateTime) < new Date(match.dateTime)
+    new Date(m.dateTime) < matchDate
   ).sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime));
 
+  // Filter matches that happen AFTER the current match
+  const upcomingMatches = fullLeagueMatches.filter(m => 
+    new Date(m.dateTime) > matchDate
+  ).sort((a, b) => new Date(a.dateTime) - new Date(b.dateTime));
+
+  // Extract Form (Last 5 matches)
   const homeForm = finishedMatches.filter(m => m.homeTeam === match.homeTeam || m.awayTeam === match.homeTeam).slice(0, 5);
   const awayForm = finishedMatches.filter(m => m.homeTeam === match.awayTeam || m.awayTeam === match.awayTeam).slice(0, 5);
 
-  return { match, standings, homeForm, awayForm };
-};
+  // Extract Next Matches (Next 3 matches)
+  const homeNext = upcomingMatches.filter(m => m.homeTeam === match.homeTeam || m.awayTeam === match.homeTeam).slice(0, 3);
+  const awayNext = upcomingMatches.filter(m => m.homeTeam === match.awayTeam || m.awayTeam === match.awayTeam).slice(0, 3);
+
+  // Return the new data
+  return { match, standings, homeForm, awayForm, homeNext, awayNext };
+}; 

@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# Do not index the auth paths
+Disallow: /login
+Disallow: /register
+
+# Point Google to your new dynamic sitemap
+Sitemap: https://goal4u.netlify.app/sitemap.xml
