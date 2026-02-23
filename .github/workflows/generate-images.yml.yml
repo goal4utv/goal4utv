@@ -36,3 +36,4 @@ jobs:
       with:
         commit_message: "Auto-generated match cards [skip ci]"
         file_pattern: "output_images/*.png"
+        add_options: '--force' # <--- THIS IS THE MAGIC LINE
